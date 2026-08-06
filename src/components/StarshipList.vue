@@ -48,10 +48,19 @@ const emit = defineEmits<{
   padding: 0;
 }
 .card {
-  border: 1px solid #ccc;
+  border: 1px solid #93c5fd;
   border-radius: 8px;
   padding: 1rem;
   cursor: pointer;
+  background-color: #ffffff;
+}
+.card:hover,
+.card:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px #bfdbfe;
+}
+.card h2 {
+  color: #1e3a8a;
 }
 .error {
   color: #b00020;
