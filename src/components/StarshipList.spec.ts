@@ -68,4 +68,97 @@ describe('StarshipList', () => {
 
     expect(wrapper.emitted('select')?.[0]).toEqual([starship])
   })
+
+  it('filters starships by name case-insensitively', async () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    await wrapper.get('#starship-search').setValue('MILLENNIUM')
+
+    const cards = wrapper.findAll('.card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0].text()).toContain('Millennium Falcon')
+  })
+
+  it('filters starships by model, manufacturer and class', async () => {
+    const falcon = makeStarship({
+      uid: '9',
+      name: 'Millennium Falcon',
+      model: 'YT-1300 light freighter',
+      manufacturer: 'Corellian Engineering Corporation',
+      starship_class: 'Light freighter',
+    })
+    const xwing = makeStarship({
+      uid: '12',
+      name: 'X-wing',
+      model: 'T-65 X-wing',
+      manufacturer: 'Incom Corporation',
+      starship_class: 'Starfighter',
+    })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    await wrapper.get('#starship-search').setValue('incom')
+    expect(wrapper.findAll('.card').map((c) => c.text())).toEqual([expect.stringContaining('X-wing')])
+
+    await wrapper.get('#starship-search').setValue('starfighter')
+    expect(wrapper.findAll('.card').map((c) => c.text())).toEqual([expect.stringContaining('X-wing')])
+
+    await wrapper.get('#starship-search').setValue('yt-1300')
+    expect(wrapper.findAll('.card').map((c) => c.text())).toEqual([expect.stringContaining('Millennium Falcon')])
+  })
+
+  it('shows the full list when the search field is empty', () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    expect(wrapper.findAll('.card')).toHaveLength(2)
+  })
+
+  it('shows a no-results message when nothing matches the search', async () => {
+    const starship = makeStarship()
+    const wrapper = mount(StarshipList, {
+      props: { starships: [starship], loading: false, error: null },
+    })
+
+    await wrapper.get('#starship-search').setValue('zzzzzz-no-match')
+
+    expect(wrapper.find('.grid').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Корабли не найдены')
+  })
+
+  it('restores the full list after clearing the search field', async () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    const input = wrapper.get('#starship-search')
+    await input.setValue('Millennium')
+    expect(wrapper.findAll('.card')).toHaveLength(1)
+
+    await input.setValue('')
+    expect(wrapper.findAll('.card')).toHaveLength(2)
+  })
+
+  it('emits select for a card that remains after filtering', async () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    await wrapper.get('#starship-search').setValue('X-wing')
+    await wrapper.get('.card').trigger('click')
+
+    expect(wrapper.emitted('select')?.[0]).toEqual([xwing])
+  })
 })

@@ -30,5 +30,10 @@ onMounted(load)
   margin: 0 auto;
   padding: 1.5rem;
   font-family: system-ui, sans-serif;
+  background-color: #eff6ff;
+  color: #1e3a8a;
+}
+h1 {
+  color: #1e3a8a;
 }
 </style>
