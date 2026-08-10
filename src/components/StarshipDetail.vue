@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Starship } from '../types/starship'
+import StarshipIcon from './StarshipIcon.vue'
 
 defineProps<{
   starship: Starship
@@ -28,6 +29,7 @@ const FIELD_LABELS: Array<[keyof Starship, string]> = [
 <template>
   <section class="starship-detail" role="dialog" aria-label="Starship details">
     <button type="button" @click="emit('close')">Close</button>
+    <StarshipIcon class="detail-icon" />
     <h2>{{ starship.name }}</h2>
     <dl>
       <template v-for="[field, label] in FIELD_LABELS" :key="field">
@@ -48,6 +50,10 @@ const FIELD_LABELS: Array<[keyof Starship, string]> = [
 }
 h2 {
   color: #1e3a8a;
+}
+.detail-icon {
+  max-width: 160px;
+  margin: 0.5rem 0;
 }
 button {
   background-color: #2563eb;

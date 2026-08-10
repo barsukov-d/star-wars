@@ -28,6 +28,13 @@ function makeStarship(overrides: Partial<Starship> = {}): Starship {
   }
 }
 
+function checkboxFor(wrapper: ReturnType<typeof mount>, fieldsetSelector: string, label: string) {
+  const fieldset = wrapper.get(fieldsetSelector)
+  const option = fieldset.findAll('.filter-option').find((el) => el.text() === label)
+  if (!option) throw new Error(`No filter option found for "${label}"`)
+  return option.get('input')
+}
+
 describe('StarshipList', () => {
   it('shows a loading indicator while loading', () => {
     const wrapper = mount(StarshipList, {
@@ -160,5 +167,126 @@ describe('StarshipList', () => {
     await wrapper.get('.card').trigger('click')
 
     expect(wrapper.emitted('select')?.[0]).toEqual([xwing])
+  })
+
+  it('renders an inline svg illustration in each card', () => {
+    const starship = makeStarship()
+    const wrapper = mount(StarshipList, {
+      props: { starships: [starship], loading: false, error: null },
+    })
+
+    expect(wrapper.get('.card').find('svg').exists()).toBe(true)
+  })
+
+  it('builds manufacturer and starship class filter options from the loaded data, splitting combined manufacturers', () => {
+    const falcon = makeStarship({
+      uid: '9',
+      manufacturer: 'Corellian Engineering Corporation, Subpro Corporation',
+      starship_class: 'Light freighter',
+    })
+    const xwing = makeStarship({
+      uid: '12',
+      manufacturer: 'Incom Corporation',
+      starship_class: 'Starfighter',
+    })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    const manufacturerLabels = wrapper.get('.manufacturer-filter').findAll('.filter-option').map((el) => el.text())
+    expect(manufacturerLabels).toEqual([
+      'Corellian Engineering Corporation',
+      'Incom Corporation',
+      'Subpro Corporation',
+    ])
+
+    const classLabels = wrapper.get('.class-filter').findAll('.filter-option').map((el) => el.text())
+    expect(classLabels).toEqual(['Light freighter', 'Starfighter'])
+  })
+
+  it('narrows the list to starships matching any selected manufacturer', async () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon', manufacturer: 'Corellian Engineering Corporation' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing', manufacturer: 'Incom Corporation' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    await checkboxFor(wrapper, '.manufacturer-filter', 'Incom Corporation').setValue(true)
+
+    const cards = wrapper.findAll('.card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0].text()).toContain('X-wing')
+  })
+
+  it('narrows the list to starships matching any selected starship class', async () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon', starship_class: 'Light freighter' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing', starship_class: 'Starfighter' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    await checkboxFor(wrapper, '.class-filter', 'Starfighter').setValue(true)
+
+    const cards = wrapper.findAll('.card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0].text()).toContain('X-wing')
+  })
+
+  it('combines search, manufacturer and class filters with AND', async () => {
+    const falcon = makeStarship({
+      uid: '9',
+      name: 'Millennium Falcon',
+      manufacturer: 'Corellian Engineering Corporation',
+      starship_class: 'Light freighter',
+    })
+    const xwing = makeStarship({
+      uid: '12',
+      name: 'X-wing',
+      manufacturer: 'Incom Corporation',
+      starship_class: 'Starfighter',
+    })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    await checkboxFor(wrapper, '.manufacturer-filter', 'Corellian Engineering Corporation').setValue(true)
+    await checkboxFor(wrapper, '.class-filter', 'Starfighter').setValue(true)
+
+    expect(wrapper.find('.grid').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Корабли не найдены')
+
+    await checkboxFor(wrapper, '.class-filter', 'Starfighter').setValue(false)
+    await wrapper.get('#starship-search').setValue('Millennium')
+
+    const cards = wrapper.findAll('.card')
+    expect(cards).toHaveLength(1)
+    expect(cards[0].text()).toContain('Millennium Falcon')
+  })
+
+  it('shows all starships when no filter values are selected', () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    expect(wrapper.findAll('.card')).toHaveLength(2)
+  })
+
+  it('resets manufacturer and class filters back to showing all starships', async () => {
+    const falcon = makeStarship({ uid: '9', name: 'Millennium Falcon', manufacturer: 'Corellian Engineering Corporation', starship_class: 'Light freighter' })
+    const xwing = makeStarship({ uid: '12', name: 'X-wing', manufacturer: 'Incom Corporation', starship_class: 'Starfighter' })
+    const wrapper = mount(StarshipList, {
+      props: { starships: [falcon, xwing], loading: false, error: null },
+    })
+
+    await checkboxFor(wrapper, '.manufacturer-filter', 'Incom Corporation').setValue(true)
+    await checkboxFor(wrapper, '.class-filter', 'Starfighter').setValue(true)
+    expect(wrapper.findAll('.card')).toHaveLength(1)
+
+    await wrapper.get('.manufacturer-filter .reset-filter').trigger('click')
+    await wrapper.get('.class-filter .reset-filter').trigger('click')
+
+    expect(wrapper.findAll('.card')).toHaveLength(2)
   })
 })

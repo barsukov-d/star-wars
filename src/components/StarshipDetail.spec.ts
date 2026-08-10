@@ -47,4 +47,10 @@ describe('StarshipDetail', () => {
 
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
+
+  it('renders an inline svg illustration', () => {
+    const wrapper = mount(StarshipDetail, { props: { starship } })
+
+    expect(wrapper.find('svg').exists()).toBe(true)
+  })
 })
