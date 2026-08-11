@@ -4,6 +4,7 @@ import { useStarships } from './composables/useStarships'
 import type { Starship } from './types/starship'
 import StarshipList from './components/StarshipList.vue'
 import StarshipDetail from './components/StarshipDetail.vue'
+import Header from './components/Header.vue'
 
 const { starships, loading, error, load } = useStarships()
 const selectedStarship = ref<Starship | null>(null)
@@ -13,7 +14,7 @@ onMounted(load)
 
 <template>
   <main class="app">
-    <h1>Star Wars Starships Catalog</h1>
+    <Header />
     <StarshipList
       :starships="starships"
       :loading="loading"
@@ -31,9 +32,6 @@ onMounted(load)
   padding: 1.5rem;
   font-family: system-ui, sans-serif;
   background-color: #eff6ff;
-  color: #1e3a8a;
-}
-h1 {
   color: #1e3a8a;
 }
 </style>
